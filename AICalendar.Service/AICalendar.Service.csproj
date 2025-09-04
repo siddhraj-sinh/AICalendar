@@ -6,4 +6,9 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\AICalendar.DomainModels\AICalendar.DomainModels.csproj" />
+    <ProjectReference Include="..\AICalendar.Repository\AICalendar.Repository.csproj" />
+  </ItemGroup>
+
 </Project>
