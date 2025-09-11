@@ -10,6 +10,8 @@ var db = sql.AddDatabase("AICalendarDb");
 builder.AddProject<Projects.AICalendar_Api>("aicalendar-api")
     .WithReference(db);
 
+builder.AddProject<Projects.AICalendar_Client>("aicalendar-client");
+
 var app = builder.Build();
 
 app.Run();
