@@ -7,6 +7,33 @@
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/AICalendar.Client.styles.css" asp-append-version="true" />
+    <style>
+        /* Simple, clean user avatar */
+        .user-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%; /* Perfect circle */
+            /* background-color: #007bff; /* Matches header/brand color */ */
+            color: #ffffff; /* White letter */
+            display: flex;
+            align-items: center; /* Vertical center */
+            justify-content: center; /* Horizontal center */
+            font-size: 1rem; /* Readable */
+            cursor: pointer;
+            border: 1px solid #000000; /* White border for clean separation */
+            user-select: none; /* Prevent text selection */
+            box-sizing: border-box;
+        }
+
+        .dropdown-menu {
+            min-width: 200px;
+        }
+
+        .dropdown-item {
+            font-size: 0.95rem;
+            padding: 0.5rem 1rem;
+        }
+    </style>
 </head>
 <body>
     <header>
@@ -25,6 +52,33 @@
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-area="" asp-page="/Privacy">Privacy</a>
                         </li>
+                    </ul>
+                    <ul class="navbar-nav">
+                        @if (User.Identity.IsAuthenticated)
+                        {
+                            <li class="nav-item dropdown">
+                                <div class="user-circle dropdown-toggle" id="userMenu" data-bs-toggle="dropdown" aria-expanded="false">
+                                    @User.FindFirst("name")?.Value.Substring(0, 1).ToUpper()
+                                </div>
+                                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenu">
+                                    <li><span class="dropdown-item"><strong>Name:</strong> @User.FindFirst("name")?.Value</span></li>
+                                    <li><span class="dropdown-item"><strong>Email:</strong> @User.FindFirst("preferred_username")?.Value</span></li>
+                                    <li><hr class="dropdown-divider" /></li>
+                                    <li>
+                                        <a class="dropdown-item text-danger" asp-page="/Account/Logout">
+                                            <i class="bi bi-box-arrow-right"></i> Logout
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+
+                        }
+                        else
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-area="MicrosoftIdentity" asp-page="/Account/SignIn">Sign in</a>
+                            </li>
+                        }
                     </ul>
                 </div>
             </div>
