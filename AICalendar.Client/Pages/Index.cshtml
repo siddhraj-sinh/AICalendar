@@ -1,35 +1,61 @@
 ﻿@page
 @model IndexModel
 @{
-    ViewData["Title"] = "Home page";
+    ViewData["Title"] = "Calendar";
 }
 
-<div class="text-center">
-    @* <h1 class="display-4">Welcome</h1> *@
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div id="calendar"></div>
+        </div>
+    </div>
 </div>
-
-<div id="calendar"></div>
 
 @section Scripts {
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             var calendarEl = document.getElementById('calendar');
+
             var calendar = new FullCalendar.Calendar(calendarEl, {
                 initialView: 'dayGridMonth',
-                events: '/api/CalendarEvent', // Your API endpoint
                 headerToolbar: {
                     left: 'prev,next today',
                     center: 'title',
-                    right: 'dayGridMonth,timeGridWeek,timeGridDay'
+                    right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
+                },
+                height: '600px',
+                events: {
+                    url: '/api/CalendarEvent',
+                    failure: function() {
+                        alert('There was an error while fetching events!');
+                    }
+                },
+                loading: function(bool) {
+                    if (bool) {
+                        console.log('Loading calendar events...');
+                        // You can show a loading spinner here
+                    } else {
+                        console.log('Calendar events loaded');
+                        // Hide loading spinner
+                    }
+                },
+                eventDidMount: function(info) {
+                    // Add tooltip with description
+                    if (info.event.extendedProps.description) {
+                        info.el.setAttribute('title', info.event.extendedProps.description);
+                    }
+                },
+                eventClick: function(info) {
+                    // Handle event click
+                    alert('Event: ' + info.event.title +
+                          '\nStart: ' + info.event.start.toLocaleString() +
+                          '\nEnd: ' + info.event.end.toLocaleString() +
+                          (info.event.extendedProps.description ? '\nDescription: ' + info.event.extendedProps.description : ''));
                 }
             });
+
             calendar.render();
         });
     </script>
-    <style>
-        #calendar {
-            max-width: 900px;
-            margin: 40px auto;
-        }
-    </style>
 }

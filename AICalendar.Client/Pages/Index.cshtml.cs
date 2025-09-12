@@ -1,29 +1,21 @@
-using AICalendar.Client.DTOs;
-using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.Identity.Abstractions;
-using Microsoft.Identity.Web;
 
 namespace AICalendar.Client.Pages;
 
+[Authorize]
 public class IndexModel : PageModel
 {
     private readonly ILogger<IndexModel> _logger;
-    //private readonly IDownstreamApi _downstreamApi;
-
-    public List<CalendarEventDto> Events { get; set; } = new();
 
     public IndexModel(ILogger<IndexModel> logger)
     {
         _logger = logger;
-        //_downstreamApi = downstreamApi;
     }
 
-    public async Task OnGetAsync()
+    public void OnGet()
     {
-        //Events = await _downstreamApi.CallApiForUserAsync<List<CalendarEventDto>>("CalendarApi", options =>
-        //{
-        //    options.RelativePath = "/api/CalendarEvent";
-        //});
+        // Events are now loaded dynamically by FullCalendar
+        _logger.LogInformation("Calendar page loaded for user");
     }
 }

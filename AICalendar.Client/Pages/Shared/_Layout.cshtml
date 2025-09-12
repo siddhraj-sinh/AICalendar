@@ -87,7 +87,14 @@
     </header>
     <div class="container">
         <main role="main" class="pb-3">
-            @RenderBody()
+            <div class="row">
+                <div class="col-md-8">
+                    @RenderBody() <!-- Calendar UI will be rendered here -->
+                </div>
+                <div class="col-md-4">
+                    @await Html.PartialAsync("_Chat") <!-- Chat UI partial -->
+                </div>
+            </div>
         </main>
     </div>
 

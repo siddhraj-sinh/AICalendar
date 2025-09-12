@@ -15,7 +15,7 @@ namespace AICalendar.Api.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetUserEvents()
+        public async Task<IActionResult> GetUserEvents([FromQuery] DateTime? start, [FromQuery] DateTime? end)
         {
             // Extract the access token from the Authorization header
             var authHeader = Request.Headers["Authorization"].ToString();
@@ -24,6 +24,7 @@ namespace AICalendar.Api.Controllers
                 return Unauthorized();
             }
             var accessToken = authHeader.Substring("Bearer ".Length).Trim();
+
             var events = await _calendarEventService.GetUserEventsAsync(accessToken);
             return Ok(events);
         }

@@ -21,6 +21,9 @@ public class Program
         builder.Services.AddRazorPages()
             .AddMicrosoftIdentityUI();
 
+        // Add Controllers support
+        builder.Services.AddControllers();
+
         builder.Services.AddAuthorization(options =>
         {
             // Require auth by default across pages (optional but nice)
@@ -48,6 +51,7 @@ public class Program
         app.UseAuthorization();
 
         app.MapRazorPages();
+        app.MapControllers();
 
         app.Run();
     }
