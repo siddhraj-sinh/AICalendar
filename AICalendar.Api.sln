@@ -15,6 +15,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AICalendar.AppHost", "AICal
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AICalendar.ServiceDefaults", "AICalendar.ServiceDefaults\AICalendar.ServiceDefaults.csproj", "{0000E06E-0E01-497C-92F1-3E590B042025}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AICalendar.Client", "AICalendar.Client\AICalendar.Client.csproj", "{3A4A6015-E2FB-E623-E6C9-BCC10C6F77C8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -45,6 +47,10 @@ Global
 		{0000E06E-0E01-497C-92F1-3E590B042025}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0000E06E-0E01-497C-92F1-3E590B042025}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0000E06E-0E01-497C-92F1-3E590B042025}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3A4A6015-E2FB-E623-E6C9-BCC10C6F77C8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3A4A6015-E2FB-E623-E6C9-BCC10C6F77C8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3A4A6015-E2FB-E623-E6C9-BCC10C6F77C8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3A4A6015-E2FB-E623-E6C9-BCC10C6F77C8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

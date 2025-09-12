@@ -1,0 +1,140 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Calendar";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+
+            <!-- Calendar container with loader overlay -->
+            <div class="calendar-container position-relative">
+                <!-- Minimal Loading overlay -->
+                <div id="calendar-loader" class="calendar-loading-overlay d-none">
+                    <div class="minimal-loader-text">Loading events...</div>
+                </div>
+
+                <!-- Calendar -->
+                <div id="calendar"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .calendar-container {
+        min-height: 500px;
+    }
+
+    .calendar-loading-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(255, 255, 255, 0.7); /* More minimal, less opaque */
+        z-index: 1000;
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
+    }
+
+    .calendar-loading-overlay.d-none {
+        display: none !important;
+    }
+
+    .minimal-loader-text {
+        font-size: 1.1rem;
+        color: #444;
+        font-weight: 500;
+        background: rgba(255,255,255,0.85);
+        padding: 16px 32px;
+        border-radius: 6px;
+        /* box-shadow: 0 2px 8px rgba(0,0,0,0.04); */
+        letter-spacing: 0.02em;
+    }
+
+    /* Ensure calendar doesn't jump when loader appears/disappears */
+    #calendar {
+        min-height: 500px;
+        transition: opacity 0.3s ease;
+    }
+
+    /* Dim calendar content when loading */
+    .calendar-container.loading #calendar {
+        opacity: 0.5;
+        pointer-events: none;
+    }
+</style>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var calendarEl = document.getElementById('calendar');
+            var loader = document.getElementById('calendar-loader');
+            var calendarContainer = document.querySelector('.calendar-container');
+
+            // Function to show loader
+            function showLoader() {
+                loader.classList.remove('d-none');
+                calendarContainer.classList.add('loading');
+            }
+
+            // Function to hide loader
+            function hideLoader() {
+                loader.classList.add('d-none');
+                calendarContainer.classList.remove('loading');
+            }
+
+            var calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth'
+                },
+                height: '570px',
+                events: {
+                    url: '/api/CalendarEvent',
+                    failure: function() {
+                        hideLoader(); // Hide loader on error
+                        alert('There was an error while fetching events!');
+                    }
+                },
+                loading: function(bool) {
+                    if (bool) {
+                        console.log('Loading calendar events...');
+                        showLoader();
+                    } else {
+                        console.log('Calendar events loaded');
+                        hideLoader();
+                    }
+                },
+                eventDidMount: function(info) {
+                    // Add tooltip with description
+                    if (info.event.extendedProps.description) {
+                        info.el.setAttribute('title', info.event.extendedProps.description);
+                    }
+                },
+                eventClick: function(info) {
+                    // Handle event click
+                    alert('Event: ' + info.event.title +
+                          '\nStart: ' + info.event.start.toLocaleString() +
+                          '\nEnd: ' + info.event.end.toLocaleString() +
+                          (info.event.extendedProps.description ? '\nDescription: ' + info.event.extendedProps.description : ''));
+                },
+                datesSet: function() {
+                    // Loader is managed by the loading callback, no need to call showLoader() here.
+                }
+            });
+
+            // Show initial loader
+            showLoader();
+
+            calendar.render();
+        });
+    </script>
+}

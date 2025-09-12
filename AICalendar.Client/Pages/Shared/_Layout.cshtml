@@ -1,0 +1,109 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - AICalendar</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/AICalendar.Client.styles.css" asp-append-version="true" />
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet" />
+    <style>
+        /* Simple, clean user avatar */
+        .user-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%; /* Perfect circle */
+            /* background-color: #007bff; /* Matches header/brand color */ */
+            color: #ffffff; /* White letter */
+            display: flex;
+            align-items: center; /* Vertical center */
+            justify-content: center; /* Horizontal center */
+            font-size: 1rem; /* Readable */
+            cursor: pointer;
+            border: 1px solid #000000; /* White border for clean separation */
+            user-select: none; /* Prevent text selection */
+            box-sizing: border-box;
+        }
+
+        .dropdown-menu {
+            min-width: 200px;
+        }
+
+        .dropdown-item {
+            font-size: 0.95rem;
+            padding: 0.5rem 1rem;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
+            <div class="container">
+                <a class="navbar-brand" asp-area="" asp-page="/Index">AICalendar</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
+                        aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+                    <ul class="navbar-nav flex-grow-1">
+                        @* <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-page="/Index">Home</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-page="/Privacy">Privacy</a>
+                        </li> *@
+                    </ul>
+                    <ul class="navbar-nav">
+                        @if (User.Identity.IsAuthenticated)
+                        {
+                            <li class="nav-item dropdown">
+                                <div class="user-circle dropdown-toggle" id="userMenu" data-bs-toggle="dropdown" aria-expanded="false">
+                                    @User.FindFirst("name")?.Value.Substring(0, 1).ToUpper()
+                                </div>
+                                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenu">
+                                    <li><span class="dropdown-item"><strong>Name:</strong> @User.FindFirst("name")?.Value</span></li>
+                                    <li><span class="dropdown-item"><strong>Email:</strong> @User.FindFirst("preferred_username")?.Value</span></li>
+                                    <li><hr class="dropdown-divider" /></li>
+                                    <li>
+                                        <a class="dropdown-item text-danger" asp-page="/Account/Logout">
+                                            <i class="bi bi-box-arrow-right"></i> Logout
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+
+                        }
+                        else
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-area="MicrosoftIdentity" asp-page="/Account/SignIn">Sign in</a>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+    <div class="container">
+        <main role="main" class="pb-3">
+            <div class="row">
+                <div class="col-md-8">
+                    @RenderBody() <!-- Calendar UI will be rendered here -->
+                </div>
+                <div class="col-md-4">
+                    @await Html.PartialAsync("_Chat") <!-- Chat UI partial -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>
