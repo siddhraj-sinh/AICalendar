@@ -15,7 +15,7 @@ public class Program
         builder.Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
             .AddMicrosoftIdentityWebApp(builder.Configuration.GetSection("AzureAd"))
             .EnableTokenAcquisitionToCallDownstreamApi()
-            //.AddDownstreamApi("CalendarApi", builder.Configuration.GetSection("DownstreamApi:CalendarApi"))
+            .AddDownstreamApi("CalendarApi", builder.Configuration.GetSection("DownstreamApi:CalendarApi"))
             .AddInMemoryTokenCaches();
 
         builder.Services.AddRazorPages()
