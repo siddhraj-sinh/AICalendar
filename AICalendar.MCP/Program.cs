@@ -1,5 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using AICalendar.MCP.Services;
 
 namespace AICalendar.MCP;
 
@@ -11,29 +13,39 @@ internal class Program
         
         // Add Aspire service defaults
         builder.AddServiceDefaults();
-        
-        // Add MCP services
-        builder.Services.AddScoped<IMcpService, McpService>();
-        
+
+        // CRITICAL: Clear all default logging and configure only stderr logging
+        builder.Logging.ClearProviders();
+        builder.Logging.AddConsole(consoleLogOptions =>
+        {
+            // Force ALL logs to stderr
+            consoleLogOptions.LogToStandardErrorThreshold = LogLevel.Trace;
+        });
+
+        // Add HTTP client for calling Calendar API
+        builder.Services.AddHttpClient("CalendarApi", client =>
+        {
+            // This will be configured via Aspire service discovery
+            var baseUrl = builder.Configuration["CalendarApi:BaseUrl"] ?? "https://localhost:7242";
+            client.BaseAddress = new Uri(baseUrl);
+        });
+
+        // Register CalendarTools service - MUST be registered for DI
+        builder.Services.AddScoped<CalendarTools>();
+
+        // Configure MCP Server
+        builder.Services
+                 .AddMcpServer()
+                 .WithStdioServerTransport()
+                 .WithToolsFromAssembly();
+
         var host = builder.Build();
         
-        Console.WriteLine("AICalendar MCP Service starting...");
-        
+        var logger = host.Services.GetRequiredService<ILogger<Program>>();
+        logger.LogInformation("AICalendar MCP Server starting...");
+
+
+        // Start the MCP server
         await host.RunAsync();
-    }
-}
-
-// Placeholder interfaces and classes - implement these based on your MCP requirements
-public interface IMcpService
-{   
-    Task ProcessAsync(string command);
-}
-
-public class McpService : IMcpService
-{
-    public async Task ProcessAsync(string command)
-    {
-        Console.WriteLine($"Processing MCP command: {command}");
-        await Task.Delay(100); // Simulate processing
     }
 }
