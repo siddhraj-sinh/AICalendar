@@ -13,10 +13,11 @@ public class Program
 
         // Sign-in and acquire tokens for your API
         builder.Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
-            .AddMicrosoftIdentityWebApp(builder.Configuration.GetSection("AzureAd"))
-            .EnableTokenAcquisitionToCallDownstreamApi()
-            .AddDownstreamApi("CalendarApi", builder.Configuration.GetSection("DownstreamApi:CalendarApi"))
-            .AddInMemoryTokenCaches();
+     .AddMicrosoftIdentityWebApp(builder.Configuration.GetSection("AzureAd"))
+     .EnableTokenAcquisitionToCallDownstreamApi()
+     .AddDownstreamApi("CalendarApi", builder.Configuration.GetSection("DownstreamApi:CalendarApi"))
+     .AddDownstreamApi("LlmApi", builder.Configuration.GetSection("DownstreamApi:LlmApi"))
+     .AddInMemoryTokenCaches();
 
         builder.Services.AddRazorPages()
             .AddMicrosoftIdentityUI();

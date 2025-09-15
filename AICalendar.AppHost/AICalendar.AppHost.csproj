@@ -18,6 +18,7 @@
   <ItemGroup>
     <ProjectReference Include="..\AICalendar.Api\AICalendar.Api.csproj" />
     <ProjectReference Include="..\AICalendar.Client\AICalendar.Client.csproj" />
+    <ProjectReference Include="..\AICalendar.LLMApi\AICalendar.LLMApi.csproj" />
     <ProjectReference Include="..\AICalendar.MCP\AICalendar.MCP.csproj" />
   </ItemGroup>
 
