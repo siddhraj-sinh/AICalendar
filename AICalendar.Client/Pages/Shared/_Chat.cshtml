@@ -104,29 +104,21 @@ document.addEventListener('DOMContentLoaded', function() {
     const sendBtn = document.getElementById('send-btn');
     const chatMessages = document.getElementById('chat-messages');
 
-    const mockResponses = [
-        "I can help you schedule events in your calendar.",
-        "What would you like me to help you with today?",
-        "I can suggest optimal meeting times based on your calendar.",
-        "Would you like me to create a new event for you?",
-        "I'm here to assist with your calendar management."
-    ];
-
     function addMessage(text, isUser = false) {
         const messageDiv = document.createElement('div');
         messageDiv.className = isUser ? 'message user-message' : 'message ai-message';
-        
+
         const contentDiv = document.createElement('div');
         contentDiv.className = 'message-content';
         contentDiv.textContent = text;
-        
+
         messageDiv.appendChild(contentDiv);
         chatMessages.appendChild(messageDiv);
-        
+
         chatMessages.scrollTop = chatMessages.scrollHeight;
     }
 
-    function sendMessage() {
+    async function sendMessage() {
         const message = chatInput.value.trim();
         if (!message) return;
 
@@ -143,14 +135,30 @@ document.addEventListener('DOMContentLoaded', function() {
         chatMessages.appendChild(typingDiv);
         chatMessages.scrollTop = chatMessages.scrollHeight;
 
-        // Simulate response after 1 second
-        setTimeout(() => {
+        try {
+            // Send message to the LlmProxyController
+            const response = await fetch('/api/LlmProxy/sendMessage', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ message })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to send message.');
+            }
+
+            const data = await response.json();
             document.getElementById('typing').remove();
-            const response = mockResponses[Math.floor(Math.random() * mockResponses.length)];
-            addMessage(response, false);
+            addMessage(data.response, false);
+        } catch (error) {
+            document.getElementById('typing').remove();
+            addMessage('Error: Unable to process your message.', false);
+        } finally {
             sendBtn.disabled = false;
             chatInput.focus();
-        }, 1000);
+        }
     }
 
     // Send message on button click
