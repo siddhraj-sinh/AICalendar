@@ -2,10 +2,9 @@ using AICalendar.DomainModels.Context;
 using AICalendar.DomainModels.Models;
 using AICalendar.Service.Contracts;
 using AICalendar.Service.Implementations;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.Identity.Web;
 namespace AICalendar.Api
 {
     public class Program
@@ -25,24 +24,11 @@ namespace AICalendar.Api
             // Add JWT Authentication
             builder.Services.AddAuthentication(options =>
             {
+                options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
                 options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
             })
-            .AddJwtBearer(options =>
-            {
-                var jwtSettings = builder.Configuration.GetSection("JwtSettings");
-                options.TokenValidationParameters = new TokenValidationParameters
-                {
-                    ValidateIssuer = true,
-                    ValidateAudience = true,
-                    ValidateLifetime = true,
-                    ValidateIssuerSigningKey = true,
-                    ValidIssuer = jwtSettings["Issuer"],
-                    ValidAudience = jwtSettings["Audience"],
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["SecretKey"])),
-                    ClockSkew = TimeSpan.Zero
-                };
-            });
+.AddMicrosoftIdentityWebApi(builder.Configuration.GetSection("AzureAd"));
 
             builder.Services.AddScoped<IAuthService, AuthService>();
             builder.Services.AddScoped<IUserService, UserService>();
@@ -52,6 +38,7 @@ namespace AICalendar.Api
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
+            builder.Services.AddHttpClient();
             // Configure SQL Server with Aspire
             builder.AddSqlServerDbContext<AppDbContext>("DefaultConnection");
 
@@ -68,6 +55,7 @@ namespace AICalendar.Api
             }
 
             app.UseHttpsRedirection();
+            app.UseAuthentication();
             app.UseAuthorization();
             app.MapControllers();
 
