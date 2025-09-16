@@ -7,18 +7,18 @@ var sql = builder.AddSqlServer("sql")
 var db = sql.AddDatabase("AICalendarDb");
 
 // Add the API project first (dependency)
-var apiService = builder.AddProject<Projects.AICalendar_Api>("aicalendar-api")
+var apiService = builder.AddProject<Projects.AICalendar_Api>("aicalendar-backend-main-server")
     .WithReference(db);
 
 // Add MCP console application with reference to API (MCP may call API)
-var mcpServer = builder.AddProject<Projects.AICalendar_MCP>("aicalendar-mcp")
+var mcpServer = builder.AddProject<Projects.AICalendar_MCP>("aicalendar-backend-mcp-server")
     .WithReference(apiService);
 
-var llmApiService = builder.AddProject<Projects.AICalendar_LLMApi>("aicalendar-llmapi")
+var llmApiService = builder.AddProject<Projects.AICalendar_Chat>("aicalendar-backend-chat-server")
         .WithReference(mcpServer);
 
 // Add Client with reference to API (Client calls API)
-var clientService = builder.AddProject<Projects.AICalendar_Client>("aicalendar-client")
+var clientService = builder.AddProject<Projects.AICalendar_Client>("aicalendar-frontend")
     .WithReference(apiService)
     .WithReference(llmApiService);
 

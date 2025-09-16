@@ -19,7 +19,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AICalendar.Client", "AICale
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AICalendar.MCP", "AICalendar.MCP\AICalendar.MCP.csproj", "{83FD1438-BBCC-4982-A170-302AB8831C55}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AICalendar.LLMApi", "AICalendar.LLMApi\AICalendar.LLMApi.csproj", "{EC67D706-0F3D-1032-9C2E-EE860A9CA7CE}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AICalendar.Chat", "AICalendar.LLMApi\AICalendar.Chat.csproj", "{EC67D706-0F3D-1032-9C2E-EE860A9CA7CE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
