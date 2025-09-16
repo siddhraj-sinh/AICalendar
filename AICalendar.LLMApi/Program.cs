@@ -1,6 +1,7 @@
-
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Identity.Web;
+using AICalendar.LLMApi.Services;
+
 namespace AICalendar.LLMApi;
 
 public class Program
@@ -18,6 +19,9 @@ public class Program
             options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
         })
 .AddMicrosoftIdentityWebApi(builder.Configuration.GetSection("AzureAd"));
+
+        // Register ChatService for dependency injection
+        builder.Services.AddScoped<IChatService, ChatService>();
 
         builder.Services.AddControllers();
         // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
