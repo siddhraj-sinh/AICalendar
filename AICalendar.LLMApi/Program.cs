@@ -1,3 +1,4 @@
+using AICalendar.Chat.Services;
 using AICalendar.LLMApi.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.AI;
@@ -51,6 +52,9 @@ public class Program
 
             return client.AsIChatClient(); // Adapt to IChatClient
         });
+
+        // Register MCP service
+        builder.Services.AddSingleton<McpService>();
 
         // Register ChatService for dependency injection
         builder.Services.AddScoped<IChatService, ChatService>();
