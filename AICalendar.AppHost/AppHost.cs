@@ -10,12 +10,11 @@ var db = sql.AddDatabase("AICalendarDb");
 var apiService = builder.AddProject<Projects.AICalendar_Api>("aicalendar-backend-main-server")
     .WithReference(db);
 
-// Add MCP console application with reference to API (MCP may call API)
-var mcpServer = builder.AddProject<Projects.AICalendar_MCP>("aicalendar-backend-mcp-server")
-    .WithReference(apiService);
+//// Add MCP console application with reference to API (MCP may call API)
+//var mcpServer = builder.AddProject<Projects.AICalendar_MCP>("aicalendar-backend-mcp-server")
+//    .WithReference(apiService);
 
-var llmApiService = builder.AddProject<Projects.AICalendar_Chat>("aicalendar-backend-chat-server")
-        .WithReference(mcpServer);
+var llmApiService = builder.AddProject<Projects.AICalendar_Chat>("aicalendar-backend-chat-server");
 
 // Add Client with reference to API (Client calls API)
 var clientService = builder.AddProject<Projects.AICalendar_Client>("aicalendar-frontend")

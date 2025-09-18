@@ -45,7 +45,7 @@ public class Program
         builder.Services.AddSingleton<IChatClient>(_ =>
         {
             var client = new ChatClient(
-                model: "openai/gpt-4o", // GitHub catalog model name
+                model: "openai/gpt-4.1", // GitHub catalog model name
                 credential: new ApiKeyCredential(githubToken),
                 options: new OpenAIClientOptions { Endpoint = endpoint }
             );

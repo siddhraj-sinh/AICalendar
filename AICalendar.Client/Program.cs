@@ -19,6 +19,15 @@ public class Program
      .AddDownstreamApi("LlmApi", builder.Configuration.GetSection("DownstreamApi:LlmApi"))
      .AddInMemoryTokenCaches();
 
+        builder.Services.AddHttpClient("LlmApi")
+      .AddStandardResilienceHandler(o =>
+      {
+          o.AttemptTimeout.Timeout = TimeSpan.FromSeconds(60);  // each attempt can run 1 min
+          o.TotalRequestTimeout.Timeout = TimeSpan.FromMinutes(2);   // overall limit
+          o.CircuitBreaker.SamplingDuration = TimeSpan.FromMinutes(3); // must be >= 2x AttemptTimeout
+      });
+
+
         builder.Services.AddRazorPages()
             .AddMicrosoftIdentityUI();
 
