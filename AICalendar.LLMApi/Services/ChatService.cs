@@ -213,42 +213,50 @@ namespace AICalendar.LLMApi.Services
             {
                 return new Dictionary<string, object>();
             }
-
             try
             {
                 // Get the tool's input schema
                 var toolSchema = JsonSerializer.Serialize(userIntention.McpClientTool.JsonSchema, new JsonSerializerOptions { WriteIndented = true });
 
                 var systemPrompt = $$"""
-        You are an expert at extracting structured data from user messages based on JSON schemas.
+You are an expert at extracting structured data from user messages based on JSON schemas.
 
-        Tool Information:
-        - Tool Name: {{userIntention.McpClientTool.Name}}
-        - Tool Description: {{userIntention.McpClientTool.Description}}
-        
-        Tool Input Schema:
-        {{toolSchema}}
+CURRENT DATE: {{DateTime.Now:yyyy-MM-dd}} ({{DateTime.Now:dddd, MMMM dd, yyyy}})
 
-        Your task is to analyze the user's message and extract the required arguments for this tool based on the schema above.
+Tool Information:
+- Tool Name: {{userIntention.McpClientTool.Name}}
+- Tool Description: {{userIntention.McpClientTool.Description}}
 
-        Rules:
-        1. Extract only the arguments that are defined in the input schema
-        2. Use the correct data types as specified in the schema (string, number, boolean, etc.)
-        3. For date/time values, use ISO 8601 format (YYYY-MM-DDTHH:mm:ss)
-        4. If a required parameter cannot be determined from the user message, set it to null
-        5. If an optional parameter is not mentioned, omit it from the response
-        6. Use intelligent defaults when appropriate (e.g., current date/time for relative references like "today", "tomorrow")
-        7. For time references without dates, assume the current date
-        8. For date references without times, use appropriate defaults (start of day for start times, end of day for end times)
+Tool Input Schema:
+{{toolSchema}}
 
-        Respond with a JSON object containing only the extracted arguments:
-        {
-          "argumentName1": "value1",
-          "argumentName2": "value2"
-        }
+Your task is to analyze the user's message and extract the required arguments for this tool based on the schema above.
 
-        If no arguments can be extracted, respond with an empty JSON object: {}
-        """;
+Rules:
+1. Extract only the arguments that are defined in the input schema
+2. Use the correct data types as specified in the schema (string, number, boolean, etc.)
+3. For date/time values, use ISO 8601 format (YYYY-MM-DDTHH:mm:ss)
+4. Use the CURRENT DATE provided above as your reference point for relative dates
+5. For date ranges without explicit times:
+   - Start dates: use 00:00:00 (beginning of day)
+   - End dates: use 23:59:59 (end of day)
+6. If a required parameter cannot be determined from the user message, set it to null
+7. If an optional parameter is not mentioned, omit it from the response
+
+Common date references:
+- "today" = current date
+- "this month" = current month's first day to last day
+- "next month" = next month's range
+- "last month" = previous month's range
+
+Respond with a JSON object containing only the extracted arguments:
+{
+  "argumentName1": "value1",
+  "argumentName2": "value2"  
+}
+
+If no arguments can be extracted, respond with an empty JSON object: {}
+""";
 
                 var chatMessages = new List<ChatMessage>
         {
@@ -259,7 +267,8 @@ namespace AICalendar.LLMApi.Services
                 var response = await _chatClient.GetResponseAsync(chatMessages);
                 var responseContent = response.Text.ToString() ?? "";
 
-                _logger.LogInformation("Tool arguments extraction response: {Response}", responseContent);
+                _logger.LogInformation("Current date: {CurrentDate}, User message: {Message}, Tool arguments extraction response: {Response}",
+                    DateTime.Now.ToString("yyyy-MM-dd"), message, responseContent);
 
                 // Parse the JSON response
                 var arguments = JsonSerializer.Deserialize<Dictionary<string, object>>(responseContent, new JsonSerializerOptions
