@@ -1,4 +1,6 @@
-﻿namespace AICalendar.LLMApi.Services
+﻿using AICalendar.LLMApi.Models;
+
+namespace AICalendar.LLMApi.Services
 {
     public interface IChatService
     {
