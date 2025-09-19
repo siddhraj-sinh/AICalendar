@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Identity.Abstractions;
+using System.Globalization;
 
 namespace AICalendar.Client.Controllers
 {
@@ -19,16 +20,32 @@ namespace AICalendar.Client.Controllers
             _logger = logger;
         }
         [HttpGet]
-        public async Task<IActionResult> GetEvents([FromQuery] DateTime? start, [FromQuery] DateTime? end)
+        public async Task<IActionResult> GetEvents([FromQuery] string? start, [FromQuery] string? end)
         {
             try
             {
                 _logger.LogInformation("Fetching calendar events. Start: {Start}, End: {End}", start, end);
 
-                // Call your Web API
+                // Build query string for the API call
+                var queryParams = new List<string>();
+                if (!string.IsNullOrEmpty(start))
+                {
+                    queryParams.Add($"start={Uri.EscapeDataString(start)}");
+                }
+                if (!string.IsNullOrEmpty(end))
+                {
+                    queryParams.Add($"end={Uri.EscapeDataString(end)}");
+                }
+                
+                var queryString = queryParams.Count > 0 ? "?" + string.Join("&", queryParams) : "";
+                var relativePath = $"/api/CalendarEvent{queryString}";
+
+                _logger.LogInformation("Calling API with path: {RelativePath}", relativePath);
+
+                // Call your Web API with query parameters
                 var events = await _downstreamApi.CallApiForUserAsync<List<CalendarEventDto>>("CalendarApi", options =>
                 {
-                    options.RelativePath = "/api/CalendarEvent";
+                    options.RelativePath = relativePath;
                 });
 
                 if (events == null)
@@ -50,22 +67,6 @@ namespace AICalendar.Client.Controllers
                     // Add any other properties FullCalendar might need
                     allDay = false // Set to true if it's an all-day event
                 }).ToList();
-
-                // Optional: Filter by date range if provided by FullCalendar
-                if (start.HasValue && end.HasValue)
-                {
-                    var filteredEvents = fullCalendarEvents.Where(e =>
-                    {
-                        if (DateTime.TryParse(e.start, out DateTime eventStart))
-                        {
-                            return eventStart >= start.Value && eventStart <= end.Value;
-                        }
-                        return true; // Include events with unparseable dates
-                    }).ToList();
-
-                    _logger.LogInformation("Filtered to {Count} events for date range", filteredEvents.Count);
-                    return Ok(filteredEvents);
-                }
 
                 return Ok(fullCalendarEvents);
             }

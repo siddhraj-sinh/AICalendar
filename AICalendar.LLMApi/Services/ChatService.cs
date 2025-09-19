@@ -23,14 +23,14 @@ namespace AICalendar.LLMApi.Services
 
         public async Task<string> ProcessMessageAsync(string message)
         {
-            _logger.LogInformation("Processing message in ChatService: {Message}", message);
+            _logger.LogInformation("[ProcessMessageAsync] Start processing message: {Message}", message);
                    
             var accessToken = GetAccessToken();
+            _logger.LogDebug("[ProcessMessageAsync] Retrieved access token: {AccessToken}", accessToken);
+
             var userIntention = await DetermineUserIntentionAsync(message);
 
-
-
-            _logger.LogInformation("Determined user intention: {Intent} with confidence: {Confidence}",
+            _logger.LogInformation("[ProcessMessageAsync] Determined user intention: {Intent} with confidence: {Confidence}",
                 userIntention.Intent, userIntention.Confidence);
 
             // If LLM suggested an MCP tool to call, execute it
@@ -38,40 +38,47 @@ namespace AICalendar.LLMApi.Services
             {
                 try
                 {
+                    _logger.LogInformation("[ProcessMessageAsync] MCP tool suggested: {ToolName}", userIntention.McpToolToCall);
+
                     var arguments = await ExtractToolArgumentsAsync(userIntention, message);
+                    _logger.LogDebug("[ProcessMessageAsync] Extracted arguments for MCP tool: {Arguments}", arguments);
 
                     var mcpResult = await ExecuteMcpToolAsync(userIntention, message, arguments);
+                    _logger.LogInformation("[ProcessMessageAsync] MCP tool execution result: {Result}", mcpResult);
 
                     var draftedResponse = await DraftUserResponseAsync(mcpResult, message);
+                    _logger.LogInformation("[ProcessMessageAsync] Drafted user response: {Response}", draftedResponse);
 
                     return draftedResponse;
 
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Failed to execute MCP tool: {ToolName}", userIntention.McpToolToCall);
+                    _logger.LogError(ex, "[ProcessMessageAsync] Failed to execute MCP tool: {ToolName}", userIntention.McpToolToCall);
                     return $"I encountered an error while processing your request. {userIntention.Response}";
                 }
             }
+
             // For now, return the LLM-generated response
             var response = userIntention.Response;
 
-            _logger.LogInformation("Generated response: {Response}", response);
+            _logger.LogInformation("[ProcessMessageAsync] Generated response: {Response}", response);
 
             return response;
         }
 
         private async Task<UserIntention> DetermineUserIntentionAsync(string message)
         {
+            _logger.LogInformation("[DetermineUserIntentionAsync] Start analyzing user message: {Message}", message);
+
             try
             {
-                _logger.LogInformation("Analyzing user message for intent: {Message}", message);
-
                 // Get available MCP tools
                 var client = await _mcpService.GetClientAsync();
+                _logger.LogDebug("[DetermineUserIntentionAsync] Retrieved MCP client.");
+
                 var tools = await client.ListToolsAsync();
-               
-            
+                _logger.LogDebug("[DetermineUserIntentionAsync] Retrieved list of MCP tools: {Tools}", tools);
 
                 // Build the tools description for the prompt
                 var toolsDescription = string.Join("\n", tools.Select(tool =>
@@ -81,7 +88,7 @@ namespace AICalendar.LLMApi.Services
         You are an AI assistant for a calendar application. Your job is to analyze user messages and determine their intention.
         
         Available MCP tools:
-        {{toolsDescription}}
+        {toolsDescription}
         
         Possible intents include:
         - CREATE_EVENT: User wants to create a new calendar event
@@ -115,15 +122,15 @@ namespace AICalendar.LLMApi.Services
         """;
 
                 var chatMessages = new List<ChatMessage>
-        {
-            new ChatMessage(ChatRole.System, systemPrompt),
-            new ChatMessage(ChatRole.User, message)
-        };
+                {
+                    new ChatMessage(ChatRole.System, systemPrompt),
+                    new ChatMessage(ChatRole.User, message)
+                };
 
                 var response = await _chatClient.GetResponseAsync(chatMessages);
-                var responseContent = response.Text.ToString().Replace("json","",StringComparison.OrdinalIgnoreCase).Replace("```","").Replace("```JSON","", StringComparison.OrdinalIgnoreCase) ?? "";
+                var responseContent = response.Text.ToString().Replace("json","",StringComparison.OrdinalIgnoreCase).Replace("```","",StringComparison.OrdinalIgnoreCase).Replace("```JSON","", StringComparison.OrdinalIgnoreCase) ?? "";
 
-                _logger.LogInformation("LLM Response: {Response}", responseContent);
+                _logger.LogInformation("[DetermineUserIntentionAsync] LLM Response: {Response}", responseContent);
 
                 // Parse the JSON response
                 var userIntention = JsonSerializer.Deserialize<UserIntention>(responseContent, new JsonSerializerOptions
@@ -137,11 +144,13 @@ namespace AICalendar.LLMApi.Services
                     var toolExists = tools.Any(t => t.Name.Equals(userIntention.McpToolToCall, StringComparison.OrdinalIgnoreCase));
                     if (!toolExists)
                     {
-                        _logger.LogWarning("LLM suggested non-existent MCP tool: {ToolName}. Setting to empty.", userIntention.McpToolToCall);
+                        _logger.LogWarning("[DetermineUserIntentionAsync] LLM suggested non-existent MCP tool: {ToolName}. Setting to empty.", userIntention.McpToolToCall);
                         userIntention.McpToolToCall = string.Empty;
                     }
                     userIntention.McpClientTool = tools.FirstOrDefault(t => t.Name.Equals(userIntention.McpToolToCall, StringComparison.OrdinalIgnoreCase));
                 }
+
+                _logger.LogInformation("[DetermineUserIntentionAsync] Completed analysis. Intent: {Intent}, Confidence: {Confidence}", userIntention?.Intent, userIntention?.Confidence);
 
                 return userIntention ?? new UserIntention
                 {
@@ -154,7 +163,7 @@ namespace AICalendar.LLMApi.Services
             }
             catch (JsonException ex)
             {
-                _logger.LogError(ex, "Failed to parse LLM response as JSON");
+                _logger.LogError(ex, "[DetermineUserIntentionAsync] Failed to parse LLM response as JSON");
                 return new UserIntention
                 {
                     Intent = "OTHER",
@@ -166,7 +175,7 @@ namespace AICalendar.LLMApi.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error determining user intention");
+                _logger.LogError(ex, "[DetermineUserIntentionAsync] Error determining user intention");
                 return new UserIntention
                 {
                     Intent = "OTHER",
@@ -177,13 +186,19 @@ namespace AICalendar.LLMApi.Services
                 };
             }
         }
+
         private async Task<string> ExecuteMcpToolAsync(UserIntention userIntention, string originalMessage, Dictionary<string, object> arguments)
         {
+            _logger.LogInformation("[ExecuteMcpToolAsync] Start executing MCP tool: {ToolName}", userIntention.McpClientTool?.Name);
+
             try
             {
                 var client = await _mcpService.GetClientAsync();
+                _logger.LogDebug("[ExecuteMcpToolAsync] Retrieved MCP client.");
+
                 var accessToken = GetAccessToken();
                 arguments.Add("accessToken", accessToken);
+                _logger.LogDebug("[ExecuteMcpToolAsync] Added access token to arguments.");
 
                 var response = await client.CallToolAsync(userIntention.McpClientTool.Name, arguments);
 
@@ -193,24 +208,28 @@ namespace AICalendar.LLMApi.Services
                     var textContentBlock = response.Content.FirstOrDefault(content => content.Type == "text");
                     if (textContentBlock is TextContentBlock textContent)
                     {
+                        _logger.LogInformation("[ExecuteMcpToolAsync] Successfully executed MCP tool. Result: {Result}", textContent.Text);
                         return textContent.Text ?? "No content returned from the tool.";
                     }
                 }
 
+                _logger.LogWarning("[ExecuteMcpToolAsync] No response content received from the tool.");
                 return "No response received from the tool.";
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error executing MCP tool: {ToolName}", userIntention.McpClientTool?.Name);
+                _logger.LogError(ex, "[ExecuteMcpToolAsync] Error executing MCP tool: {ToolName}", userIntention.McpClientTool?.Name);
                 return "I encountered an error while processing your request.";
             }
         }
 
-
         private async Task<Dictionary<string, object>> ExtractToolArgumentsAsync(UserIntention userIntention, string message)
         {
+            _logger.LogInformation("[ExtractToolArgumentsAsync] Start extracting arguments for tool: {ToolName}", userIntention.McpClientTool?.Name);
+
             if (userIntention.McpClientTool == null)
             {
+                _logger.LogWarning("[ExtractToolArgumentsAsync] No MCP tool provided. Returning empty arguments.");
                 return new Dictionary<string, object>();
             }
 
@@ -220,46 +239,55 @@ namespace AICalendar.LLMApi.Services
                 var toolSchema = JsonSerializer.Serialize(userIntention.McpClientTool.JsonSchema, new JsonSerializerOptions { WriteIndented = true });
 
                 var systemPrompt = $$"""
-        You are an expert at extracting structured data from user messages based on JSON schemas.
+You are an expert at extracting structured data from user messages based on JSON schemas.
 
-        Tool Information:
-        - Tool Name: {{userIntention.McpClientTool.Name}}
-        - Tool Description: {{userIntention.McpClientTool.Description}}
-        
-        Tool Input Schema:
-        {{toolSchema}}
+CURRENT DATE: {DateTime.Now:yyyy-MM-dd} ({DateTime.Now:dddd, MMMM dd, yyyy})
 
-        Your task is to analyze the user's message and extract the required arguments for this tool based on the schema above.
+Tool Information:
+- Tool Name: {userIntention.McpClientTool.Name}
+- Tool Description: {userIntention.McpClientTool.Description}
 
-        Rules:
-        1. Extract only the arguments that are defined in the input schema
-        2. Use the correct data types as specified in the schema (string, number, boolean, etc.)
-        3. For date/time values, use ISO 8601 format (YYYY-MM-DDTHH:mm:ss)
-        4. If a required parameter cannot be determined from the user message, set it to null
-        5. If an optional parameter is not mentioned, omit it from the response
-        6. Use intelligent defaults when appropriate (e.g., current date/time for relative references like "today", "tomorrow")
-        7. For time references without dates, assume the current date
-        8. For date references without times, use appropriate defaults (start of day for start times, end of day for end times)
+Tool Input Schema:
+{toolSchema}
 
-        Respond with a JSON object containing only the extracted arguments:
-        {
-          "argumentName1": "value1",
-          "argumentName2": "value2"
-        }
+Your task is to analyze the user's message and extract the required arguments for this tool based on the schema above.
 
-        If no arguments can be extracted, respond with an empty JSON object: {}
-        """;
+Rules:
+1. Extract only the arguments that are defined in the input schema
+2. Use the correct data types as specified in the schema (string, number, boolean, etc.)
+3. For date/time values, use ISO 8601 format (YYYY-MM-DDTHH:mm:ss)
+4. Use the CURRENT DATE provided above as your reference point for relative dates
+5. For date ranges without explicit times:
+   - Start dates: use 00:00:00 (beginning of day)
+   - End dates: use 23:59:59 (end of day)
+6. If a required parameter cannot be determined from the user message, set it to null
+7. If an optional parameter is not mentioned, omit it from the response
+
+Common date references:
+- "today" = current date
+- "this month" = current month's first day to last day
+- "next month" = next month's range
+- "last month" = previous month's range
+
+Respond with a JSON object containing only the extracted arguments:
+{
+  "argumentName1": "value1",
+  "argumentName2": "value2"  
+}
+
+If no arguments can be extracted, respond with an empty JSON object: {}
+""";
 
                 var chatMessages = new List<ChatMessage>
-        {
-            new ChatMessage(ChatRole.System, systemPrompt),
-            new ChatMessage(ChatRole.User, $"User message: {message}")
-        };
+                {
+                    new ChatMessage(ChatRole.System, systemPrompt),
+                    new ChatMessage(ChatRole.User, $"User message: {message}")
+                };
 
                 var response = await _chatClient.GetResponseAsync(chatMessages);
                 var responseContent = response.Text.ToString() ?? "";
 
-                _logger.LogInformation("Tool arguments extraction response: {Response}", responseContent);
+                _logger.LogInformation("[ExtractToolArgumentsAsync] Tool arguments extraction response: {Response}", responseContent);
 
                 // Parse the JSON response
                 var arguments = JsonSerializer.Deserialize<Dictionary<string, object>>(responseContent, new JsonSerializerOptions
@@ -267,22 +295,25 @@ namespace AICalendar.LLMApi.Services
                     PropertyNameCaseInsensitive = true
                 });
 
+                _logger.LogInformation("[ExtractToolArgumentsAsync] Extracted arguments: {Arguments}", arguments);
                 return arguments ?? new Dictionary<string, object>();
             }
             catch (JsonException ex)
             {
-                _logger.LogError(ex, "Failed to parse tool arguments extraction response");
+                _logger.LogError(ex, "[ExtractToolArgumentsAsync] Failed to parse tool arguments extraction response");
                 return new Dictionary<string, object>();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error extracting tool arguments");
+                _logger.LogError(ex, "[ExtractToolArgumentsAsync] Error extracting tool arguments");
                 return new Dictionary<string, object>();
             }
         }
 
         private async Task<string> DraftUserResponseAsync(string mcpToolResult, string originalUserMessage)
         {
+            _logger.LogInformation("[DraftUserResponseAsync] Start drafting user response.");
+
             try
             {
                 var systemPrompt = """
@@ -310,34 +341,42 @@ namespace AICalendar.LLMApi.Services
             """;
 
                 var chatMessages = new List<ChatMessage>
-        {
-            new ChatMessage(ChatRole.System, systemPrompt),
-            new ChatMessage(ChatRole.User, $"Original user message: {originalUserMessage}\n\nTool execution result: {mcpToolResult}")
-        };
+                {
+                    new ChatMessage(ChatRole.System, systemPrompt),
+                    new ChatMessage(ChatRole.User, $"Original user message: {originalUserMessage}\n\nTool execution result: {mcpToolResult}")
+                };
 
                 var response = await _chatClient.GetResponseAsync(chatMessages);
                 var responseContent = response.Text.ToString() ?? "I've processed your request.";
 
-                _logger.LogInformation("Drafted user response: {Response}", responseContent);
+                _logger.LogInformation("[DraftUserResponseAsync] Drafted response: {Response}", responseContent);
 
                 return responseContent;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error drafting user response");
+                _logger.LogError(ex, "[DraftUserResponseAsync] Error drafting user response");
                 return "I've completed your request, but I'm having trouble formatting the response right now.";
             }
         }
 
         private string? GetAccessToken()
         {
+            _logger.LogInformation("[GetAccessToken] Retrieving access token from HTTP context.");
+
             var authHeader = _httpContextAccessor.HttpContext?
                 .Request.Headers["Authorization"].FirstOrDefault();
 
             if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
+            {
+                _logger.LogWarning("[GetAccessToken] Authorization header is missing or invalid.");
                 return null;
+            }
 
-            return authHeader.Substring("Bearer ".Length).Trim();
+            var accessToken = authHeader.Substring("Bearer ".Length).Trim();
+            _logger.LogDebug("[GetAccessToken] Retrieved access token: {AccessToken}", accessToken);
+
+            return accessToken;
         }
     }
 }

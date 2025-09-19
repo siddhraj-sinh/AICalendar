@@ -13,19 +13,18 @@ namespace AICalendar.Api.Controllers
     public class CalendarEventController : ControllerBase
     {
         private ICalendarEeventService _calendarEventService;
-        public CalendarEventController(ICalendarEeventService calendarEeventService)
+        private readonly ILogger<CalendarEventController> _logger;
+        public CalendarEventController(ICalendarEeventService calendarEeventService, ILogger<CalendarEventController> logger)
         {
             _calendarEventService = calendarEeventService;
+            _logger = logger;
         }
 
         [HttpGet]
         public async Task<IActionResult> GetUserEvents([FromQuery] DateTime? start, [FromQuery] DateTime? end)
         {
-            // Extract the access token from the Authorization header
-            var authHeader = Request.Headers["Authorization"].ToString();
-            var accessToken = authHeader.Substring("Bearer ".Length).Trim();
 
-            var events = await _calendarEventService.GetUserEventsAsync(accessToken);
+            var events = await _calendarEventService.GetUserEventsAsync(start,end);
             return Ok(events);
         }
     }
