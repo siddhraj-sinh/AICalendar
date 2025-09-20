@@ -26,53 +26,101 @@ The application follows a sophisticated **microservices architecture** with **Do
 
 ```mermaid
 graph TB
-    subgraph "Presentation Layer"
-        A[Razor Pages Client] 
-        B[AI Chat Interface]
+    %% User Interface Layer (Top)
+    subgraph "🎨 Presentation Layer"
+        direction LR
+        A[📱 Razor Pages Client]
+        B[💬 AI Chat Interface]
     end
     
-    subgraph "API Gateway Layer"
-        C[Calendar API]
-        D[LLM API]
+    %% API Gateway Layer
+    subgraph "🚪 API Gateway Layer"
+        direction LR
+        C[📅 Calendar API]
+        D[🤖 LLM API]
     end
     
-    subgraph "AI Processing Layer"
+    %% AI Processing happens here in the flow
+    subgraph "🧠 AI Processing Layer"
+        direction LR
         E[ChatGPT-4 Integration]
-        F[Model Context Protocol]
+        F[Model Context Protocol Server]
         G[Natural Language Processing]
     end
     
-    subgraph "Business Logic Layer"
-        H[Calendar Service]
-        I[Authentication Service]
-        J[User Service]
+    %% Business Logic Layer
+    subgraph "⚙️ Business Logic Layer"
+        direction LR
+        H[📅 Calendar Service]
+        I[🔐 Authentication Service]
+        J[👤 User Service]
     end
     
-    subgraph "Data Layer"
+    %% Data Access Layer
+    subgraph "💾 Data Layer"
+        direction LR
         K[Entity Framework Core]
-        L[SQL Server]
-        M[Microsoft Graph API]
+        L[🗄️ SQL Server]
+        M[📊 Microsoft Graph API]
     end
     
-    subgraph "Infrastructure"
+    %% Infrastructure Layer (Bottom)
+    subgraph "🏗️ Infrastructure Layer"
+        direction LR
         N[.NET Aspire Orchestration]
-        O[Azure AD Authentication]
-        P[OpenTelemetry Monitoring]
+        O[🔒 Azure AD Authentication]
+        P[📈 OpenTelemetry Monitoring]
     end
     
-    A --> C
-    B --> D
-    C --> H
-    D --> E
-    E --> F
-    F --> G
-    H --> K
-    I --> O
-    K --> L
-    H --> M
-    N --> C
-    N --> D
+    %% User Flow Connections
+    A -->|HTTP Requests| C
+    B -->|AI Queries| D
+    
+    %% API to AI Processing
+    D -->|Process Queries| E
+    E -->|Context & Protocol| F
+    F -->|Language Analysis| G
+    G -->|Structured Response| D
+    
+    %% API to Business Logic
+    C -->|Calendar Operations| H
+    D -->|Business Rules| H
+    
+    %% Business Logic to Data
+    H -->|Data Access| K
+    H -->|External Calendar Data| M
+    I -->|User Authentication| O
+    J -->|User Data| K
+    
+    %% Data Layer
+    K -->|Database Operations| L
+    
+    %% Infrastructure Support
+    N -.->|Orchestrates| C
+    N -.->|Orchestrates| D
+    O -.->|Provides Auth| I
+    P -.->|Monitors| N
+    
+    %% Cross-cutting concerns
+    I -.->|Auth Context| H
+    I -.->|Auth Context| J
+    
+    %% Styling for better visual hierarchy
+    classDef presentationLayer fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    classDef apiLayer fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef aiLayer fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef businessLayer fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+    classDef dataLayer fill:#fce4ec,stroke:#880e4f,stroke-width:2px
+    classDef infraLayer fill:#f1f8e9,stroke:#33691e,stroke-width:2px
+    
+    class A,B presentationLayer
+    class C,D apiLayer
+    class E,F,G aiLayer
+    class H,I,J businessLayer
+    class K,L,M dataLayer
+    class N,O,P infraLayer
 ```
+
 ## AI Chat Interaction Flow
 
 ```mermaid
