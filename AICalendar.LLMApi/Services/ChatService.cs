@@ -1,4 +1,4 @@
-using AICalendar.Chat.Services;
+﻿using AICalendar.Chat.Services;
 using AICalendar.LLMApi.Models;
 using Microsoft.Extensions.AI;
 using ModelContextProtocol.Client;
@@ -85,50 +85,64 @@ namespace AICalendar.LLMApi.Services
                     $"- {tool.Name}: {tool.Description}"));
 
                 var systemPrompt = $$"""
-        You are an AI assistant for a calendar application. Your job is to analyze user messages and determine their intention.
-        
-        Available MCP tools:
-        {toolsDescription}
-        
-        Possible intents include:
-        - CREATE_EVENT: User wants to create a new calendar event
-        - UPDATE_EVENT: User wants to modify an existing event
-        - DELETE_EVENT: User wants to remove an event
-        - VIEW_EVENTS: User wants to see their calendar or events
-        - SEARCH_EVENTS: User wants to find specific events
-        - SET_REMINDER: User wants to set a reminder
-        - GENERAL_QUESTION: User has a general question about the calendar
-        - GREETING: User is greeting or making small talk
-        - OTHER: Intent doesn't match any of the above categories
+You are an AI assistant for a calendar application. Your job is to analyze user messages and determine their intention.
 
-        Analyze the user's message and respond with a JSON object containing:
-        {
-          "intent": "one of the intents listed above",
-          "confidence": "high/medium/low",
-          "entities": {
-            "extracted_entities": "any dates, times, event names, locations, etc."
-          },
-          "response": "a helpful response to the user based on their intent",
-          "mcpToolToCall": "name of the MCP tool to call (from the available tools list above) or empty string if no tool needed"
-        }
+Available MCP tools:
+{toolsDescription}
 
-        Rules for selecting MCP tools:
-        - For VIEW_EVENTS or SEARCH_EVENTS intents, use the appropriate calendar retrieval tool
-        - For CREATE_EVENT, UPDATE_EVENT, DELETE_EVENT intents, use the corresponding MCP tool if available
-        - For GREETING, GENERAL_QUESTION, or OTHER intents, set mcpToolToCall to empty string
-        - Only specify tools that are actually available in the MCP tools list above
+Possible intents include:
+- CREATE_EVENT: User wants to create a new calendar event
+- UPDATE_EVENT: User wants to modify an existing event
+- DELETE_EVENT: User wants to remove an event
+- VIEW_EVENTS: User wants to see their calendar or events
+- SEARCH_EVENTS: User wants to find specific events
+- SET_REMINDER: User wants to set a reminder
+- GENERAL_QUESTION: User has a general question about the calendar
+- GREETING: User is greeting or making small talk
+- OTHER: Intent doesn't match any of the above categories
 
-        Be concise and helpful in your response.
-        """;
+CRITICAL INSTRUCTIONS for mcpToolToCall field:
+- You MUST use the EXACT tool name as provided in the Available MCP tools list above
+- DO NOT modify, change case, add spaces, or alter the tool name in ANY way
+- Copy the tool name EXACTLY as it appears (e.g., "create_calendar_event", "get_calendar_events")
+- If no MCP tool is needed for the user's request, use an empty string ""
+
+Examples of correct tool mapping:
+- If user wants to create an event → use "create_calendar_event" (exact name from tools list)
+- If user wants to view events → use "get_calendar_events" (exact name from tools list)
+- If user is just greeting → use "" (empty string)
+
+Analyze the user's message and respond with a JSON object containing:
+{
+  "intent": "one of the intents listed above",
+  "confidence": "high/medium/low",
+  "entities": {
+    "extracted_entities": "any dates, times, event names, locations, etc."
+  },
+  "response": "a helpful response to the user based on their intent",
+  "mcpToolToCall": "EXACT tool name from the Available MCP tools list above, or empty string if no tool needed"
+}
+
+Rules for selecting MCP tools:
+- For VIEW_EVENTS or SEARCH_EVENTS intents, use the appropriate calendar retrieval tool
+- For CREATE_EVENT, UPDATE_EVENT, DELETE_EVENT intents, use the corresponding MCP tool if available
+- For GREETING, GENERAL_QUESTION, or OTHER intents, set mcpToolToCall to empty string
+- Only specify tools that are actually available in the MCP tools list above
+
+Be concise and helpful in your response.
+Remember: The mcpToolToCall field must contain the EXACT tool name as listed in the Available MCP tools section. Do not interpret or modify these names.
+""";
 
                 var chatMessages = new List<ChatMessage>
-                {
-                    new ChatMessage(ChatRole.System, systemPrompt),
-                    new ChatMessage(ChatRole.User, message)
-                };
+        {
+            new ChatMessage(ChatRole.System, systemPrompt),
+            new ChatMessage(ChatRole.User, message)
+        };
 
                 var response = await _chatClient.GetResponseAsync(chatMessages);
-                var responseContent = response.Text.ToString().Replace("json","",StringComparison.OrdinalIgnoreCase).Replace("```","",StringComparison.OrdinalIgnoreCase).Replace("```JSON","", StringComparison.OrdinalIgnoreCase) ?? "";
+                var responseContent = response.Text.ToString().Replace("json", "", StringComparison.OrdinalIgnoreCase)
+                                                            .Replace("```", "", StringComparison.OrdinalIgnoreCase)
+                                                    .Replace("```JSON", "", StringComparison.OrdinalIgnoreCase) ?? "";
 
                 _logger.LogInformation("[DetermineUserIntentionAsync] LLM Response: {Response}", responseContent);
 
@@ -235,67 +249,135 @@ namespace AICalendar.LLMApi.Services
 
             try
             {
+                // Get current date/time info
+                var now = DateTime.Now;
+                var currentDate = now.Date;
+                var currentTime = now.ToString("HH:mm:ss");
+
                 // Get the tool's input schema
                 var toolSchema = JsonSerializer.Serialize(userIntention.McpClientTool.JsonSchema, new JsonSerializerOptions { WriteIndented = true });
 
                 var systemPrompt = $$"""
 You are an expert at extracting structured data from user messages based on JSON schemas.
 
-CURRENT DATE: {DateTime.Now:yyyy-MM-dd} ({DateTime.Now:dddd, MMMM dd, yyyy})
+CURRENT DATE AND TIME INFORMATION:
+- Current Date: {{now:yyyy-MM-dd}} ({{now:dddd, MMMM dd, yyyy}})
+- Current Time: {{currentTime}}
+- Current Year: {{now:yyyy}}
 
 Tool Information:
-- Tool Name: {userIntention.McpClientTool.Name}
-- Tool Description: {userIntention.McpClientTool.Description}
+- Tool Name: {{userIntention.McpClientTool.Name}}
+- Tool Description: {{userIntention.McpClientTool.Description}}
 
-Tool Input Schema:
-{toolSchema}
+Tool Input Schema (USE EXACT ARGUMENT NAMES FROM THIS SCHEMA):
+{{toolSchema}}
 
-Your task is to analyze the user's message and extract the required arguments for this tool based on the schema above.
+CRITICAL INSTRUCTIONS:
+1. You MUST use the EXACT argument names as they appear in the JSON schema above
+2. DO NOT modify, change case, or alter argument names in ANY way
+3. Copy argument names EXACTLY as defined in the schema properties
+4. Pay attention to the exact spelling and casing of each property name
 
-Rules:
-1. Extract only the arguments that are defined in the input schema
-2. Use the correct data types as specified in the schema (string, number, boolean, etc.)
-3. For date/time values, use ISO 8601 format (YYYY-MM-DDTHH:mm:ss)
-4. Use the CURRENT DATE provided above as your reference point for relative dates
-5. For date ranges without explicit times:
-   - Start dates: use 00:00:00 (beginning of day)
-   - End dates: use 23:59:59 (end of day)
-6. If a required parameter cannot be determined from the user message, set it to null
-7. If an optional parameter is not mentioned, omit it from the response
+DATE/TIME EXTRACTION RULES:
+- Use the current date/time information provided above as your reference
+- For relative date references, calculate from the current date:
+  • "today" = {{currentDate:yyyy-MM-dd}}
+  • "tomorrow" = {{currentDate.AddDays(1):yyyy-MM-dd}}
+  • "tonight" = {{currentDate:yyyy-MM-dd}} (evening time, suggest 20:00:00 if no specific time given)
+  • "yesterday" = {{currentDate.AddDays(-1):yyyy-MM-dd}}
+  • "this week" = current week range
+  • "next week" = next week range
+  • "this month" = {{currentDate:yyyy-MM}}-01 to {{DateTime.DaysInMonth(currentDate.Year, currentDate.Month):D2}}
+  • "next month" = next month's range
 
-Common date references:
-- "today" = current date
-- "this month" = current month's first day to last day
-- "next month" = next month's range
-- "last month" = previous month's range
+TIME HANDLING:
+- For times without dates: assume current date
+- For "tonight": use current date with evening time (20:00:00 if not specified)
+- For "morning": use 09:00:00
+- For "afternoon": use 14:00:00
+- For "evening": use 20:00:00
+- For date/time values, use ISO 8601 format: YYYY-MM-DDTHH:mm:ss
 
-Respond with a JSON object containing only the extracted arguments:
+DATA TYPE RULES:
+- Use correct data types as specified in the schema (string, number, boolean, array, object)
+- For date/time: use ISO 8601 format strings
+- For numbers: use actual numeric values, not strings
+- For booleans: use true/false, not "true"/"false"
+- For required parameters that cannot be determined: set to null
+- For optional parameters not mentioned: omit from response
+
+ARGUMENT NAME VALIDATION:
+- Before including any argument, verify it exists in the schema properties
+- Use the EXACT case-sensitive name from the schema
+- Do not add arguments that don't exist in the schema
+- Do not rename or transform argument names
+
+Examples of date calculations from current date ({{now:yyyy-MM-dd}}):
+- "create an event tonight" → startDateTime: "{{currentDate:yyyy-MM-dd}}T20:00:00"
+- "schedule for tomorrow" → startDateTime: "{{currentDate.AddDays(1):yyyy-MM-dd}}T09:00:00"
+- "meeting at 3pm today" → startDateTime: "{{currentDate:yyyy-MM-dd}}T15:00:00"
+
+Analyze the user message and extract arguments. Respond with a JSON object containing ONLY the extracted arguments using EXACT schema property names:
+
 {
-  "argumentName1": "value1",
-  "argumentName2": "value2"  
+  "exact_property_name_from_schema": "value",
+  "another_exact_property_name": "value"
 }
 
-If no arguments can be extracted, respond with an empty JSON object: {}
+If no arguments can be extracted, respond with: {}
 """;
 
                 var chatMessages = new List<ChatMessage>
-                {
-                    new ChatMessage(ChatRole.System, systemPrompt),
-                    new ChatMessage(ChatRole.User, $"User message: {message}")
-                };
+        {
+            new ChatMessage(ChatRole.System, systemPrompt),
+            new ChatMessage(ChatRole.User, $"User message: {message}")
+        };
 
                 var response = await _chatClient.GetResponseAsync(chatMessages);
-                var responseContent = response.Text.ToString() ?? "";
+                var responseContent = response.Text.ToString()
+                    .Replace("```json", "", StringComparison.OrdinalIgnoreCase)
+                    .Replace("```JSON", "", StringComparison.OrdinalIgnoreCase)
+                    .Replace("```", "", StringComparison.OrdinalIgnoreCase)
+                    .Trim() ?? "";
 
                 _logger.LogInformation("[ExtractToolArgumentsAsync] Tool arguments extraction response: {Response}", responseContent);
 
-                // Parse the JSON response
+                // Parse the JSON response with exact property name matching
                 var arguments = JsonSerializer.Deserialize<Dictionary<string, object>>(responseContent, new JsonSerializerOptions
                 {
-                    PropertyNameCaseInsensitive = true
+                    PropertyNameCaseInsensitive = false // Use exact case matching
                 });
 
                 _logger.LogInformation("[ExtractToolArgumentsAsync] Extracted arguments: {Arguments}", arguments);
+
+                // Validate that all extracted arguments exist in the schema
+                if (arguments != null && arguments.Any())
+                {
+                    var schemaObj = JsonSerializer.Deserialize<JsonElement>(toolSchema);
+                    var schemaProperties = new HashSet<string>();
+
+                    if (schemaObj.TryGetProperty("properties", out var props))
+                    {
+                        foreach (var prop in props.EnumerateObject())
+                        {
+                            schemaProperties.Add(prop.Name);
+                        }
+                    }
+
+                    // Remove any arguments that don't exist in schema
+                    var validArguments = arguments.Where(kvp => schemaProperties.Contains(kvp.Key))
+                                                 .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+
+                    if (validArguments.Count != arguments.Count)
+                    {
+                        var invalidArgs = arguments.Keys.Except(schemaProperties).ToList();
+                        _logger.LogWarning("[ExtractToolArgumentsAsync] Removed invalid arguments not in schema: {InvalidArgs}. Valid schema properties: {ValidProps}",
+                            string.Join(", ", invalidArgs), string.Join(", ", schemaProperties));
+                    }
+
+                    return validArguments;
+                }
+
                 return arguments ?? new Dictionary<string, object>();
             }
             catch (JsonException ex)
@@ -309,7 +391,6 @@ If no arguments can be extracted, respond with an empty JSON object: {}
                 return new Dictionary<string, object>();
             }
         }
-
         private async Task<string> DraftUserResponseAsync(string mcpToolResult, string originalUserMessage)
         {
             _logger.LogInformation("[DraftUserResponseAsync] Start drafting user response.");

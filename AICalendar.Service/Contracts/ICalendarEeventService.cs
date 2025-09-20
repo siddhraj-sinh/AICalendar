@@ -9,6 +9,8 @@ namespace AICalendar.Service.Contracts
 {
     public interface ICalendarEeventService
     {
-        Task<List<CalendarEventDto>> GetUserEventsAsync(DateTime? start, DateTime? end);
+        Task<List<CalendarEventDto>> GetEventsAsync(DateTime? start, DateTime? end);
+
+        Task<CalendarEventDto> CreateEventAsync(CalendarEventDto calendarEvent);
     }
 }

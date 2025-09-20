@@ -1,4 +1,5 @@
-﻿using AICalendar.Service.Contracts;
+﻿using AICalendar.DomainModels.DTOs;
+using AICalendar.Service.Contracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -21,11 +22,30 @@ namespace AICalendar.Api.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetUserEvents([FromQuery] DateTime? start, [FromQuery] DateTime? end)
+        public async Task<IActionResult> GetEventsAsync([FromQuery] DateTime? start, [FromQuery] DateTime? end)
         {
 
-            var events = await _calendarEventService.GetUserEventsAsync(start,end);
+            var events = await _calendarEventService.GetEventsAsync(start,end);
             return Ok(events);
+        }
+
+        [HttpPost("create")]
+        public async Task<IActionResult> CreateEventAsync([FromBody] CalendarEventDto calendarEvent)
+        {
+            if (calendarEvent == null)
+            {
+                return BadRequest("Event data is required.");
+            }
+            try
+            {
+                var createdEvent = await _calendarEventService.CreateEventAsync(calendarEvent);
+                return Ok(createdEvent);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating event");
+                return BadRequest("Error creating event");
+            }
         }
     }
 }
