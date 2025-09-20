@@ -73,6 +73,28 @@ graph TB
     N --> C
     N --> D
 ```
+## AI Chat Interaction Flow
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant UI as Chat UI
+    participant LLM as LLM API
+    participant MCP as MCP Server
+    participant Graph as Microsoft Graph
+    
+    U->>UI: "Schedule meeting tomorrow 2pm"
+    UI->>LLM: Process Natural Language
+    LLM->>LLM: Intent & MCP Tool Recognition
+    LLM->>LLM: Extract Tool Arguments
+    LLM->>MCP: Call create_calendar_event(arguments)
+    MCP->>Graph: Create Event via Graph API
+    Graph->>MCP: Event Created Response
+    MCP->>LLM: MCP Tool Execution Result
+    LLM->>LLM: Draft User Response
+    LLM->>UI: Formatted Natural Response
+    UI->>U: "Meeting scheduled successfully for tomorrow at 2pm!"
+```
 
 ## Technology Stack
 
@@ -109,25 +131,4 @@ graph TB
 - **CQRS Principles** - Command and query separation
 - **Domain-Driven Design** - Business logic encapsulation
  
-## AI Chat Interaction Flow
-
-```mermaid
-sequenceDiagram
-    participant U as User
-    participant UI as Chat UI
-    participant LLM as LLM API
-    participant MCP as MCP Server
-    participant Graph as Microsoft Graph
-    
-    U->>UI: "Schedule meeting tomorrow 2pm"
-    UI->>LLM: Process Natural Language
-    LLM->>LLM: Intent Recognition
-    LLM->>MCP: Call create_calendar_event
-    MCP->>Graph: Create Event via Graph API
-    Graph->>MCP: Event Created Response
-    MCP->>LLM: Success Result
-    LLM->>UI: Formatted Response
-    UI->>U: "Meeting scheduled successfully"
-```
-
 
