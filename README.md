@@ -104,21 +104,6 @@ graph TB
     %% Cross-cutting concerns
     I -.->|Auth Context| H
     I -.->|Auth Context| J
-    
-    %% Styling for better visual hierarchy
-    classDef presentationLayer fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    classDef apiLayer fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
-    classDef aiLayer fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    classDef businessLayer fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
-    classDef dataLayer fill:#fce4ec,stroke:#880e4f,stroke-width:2px
-    classDef infraLayer fill:#f1f8e9,stroke:#33691e,stroke-width:2px
-    
-    class A,B presentationLayer
-    class C,D apiLayer
-    class E,F,G aiLayer
-    class H,I,J businessLayer
-    class K,L,M dataLayer
-    class N,O,P infraLayer
 ```
 
 ## AI Chat Interaction Flow
